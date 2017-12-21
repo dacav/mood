@@ -8,6 +8,7 @@
 #include "tcpsock.h"
 #include "server.h"
 #include "session.h"
+#include "signal_wrapper.h"
 
 #define MAX_ACTIVE_SESSIONS 2
 
@@ -20,9 +21,10 @@ struct global_context
     session_t sessions[MAX_ACTIVE_SESSIONS];
 };
 
-static void on_accepted(server_t server, int clsock);
 static void glc_shutdown(struct global_context* glc);
-static void handle_termination_by_signal(int, short, void*);
+
+static void on_accepted(server_t server, int clsock);
+static void handle_termination_by_signal(int signal, void* arg);
 
 int main (int argc, char **argv)
 {
@@ -43,7 +45,7 @@ int main (int argc, char **argv)
 
     errno = 0;
     global_context.event_base = event_base_new();
-    if (global_context.event_base == NULL) {
+    if (!global_context.event_base) {
         perror("event_base_new");
         goto term1;
     }
@@ -55,24 +57,17 @@ int main (int argc, char **argv)
         .user_context = &global_context,
     };
     global_context.server = server_new(&server_params);
-    if (global_context.server == NULL) {
+    if (!global_context.server) {
         goto term2;
     }
 
-    struct event* ev_sigint = evsignal_new(
-        global_context.event_base,
-        SIGINT,
-        handle_termination_by_signal,
-        &global_context
-    );
-    if (ev_sigint == NULL) {
-        perror("evsignal_new");
-        goto term3;
-    }
-
-    errno = 0;
-    if (evsignal_add(ev_sigint, NULL) == -1) {
-        perror("evsignal_add");
+    struct sigwrap_setting signals[] = {
+        {SIGINT, handle_termination_by_signal, &global_context},
+        {SIGTERM, handle_termination_by_signal, &global_context},
+        {-1, NULL, NULL}
+    };
+    sigwrap_t sigwrap = sigwrap_new(global_context.event_base, signals);
+    if (!sigwrap) {
         goto term3;
     }
 
@@ -81,6 +76,7 @@ int main (int argc, char **argv)
         perror("event_base_dispatch");
     }
 
+    sigwrap_del(sigwrap);
   term3:
     server_delete(global_context.server);
   term2:
@@ -105,9 +101,9 @@ static void on_accepted(server_t server, int clsock)
     close(clsock);
 }
 
-static void handle_termination_by_signal(int fd, short ev, void* arg)
+static void handle_termination_by_signal(int signal, void* arg)
 {
-    struct global_context *glc = (struct global_context*)arg;
+    struct global_context* glc = (struct global_context*)arg;
     glc_shutdown(glc);
     event_base_loopexit(glc->event_base, NULL);
 }
