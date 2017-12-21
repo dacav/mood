@@ -68,6 +68,7 @@ session_t session_new(const struct session_params* params)
 
     memcpy(&session->params, params, sizeof(struct session_params));
 
+    errno = 0;
     session->ev_recv = event_new(
         session->params.event_base,
         session->params.socket,
@@ -75,8 +76,12 @@ session_t session_new(const struct session_params* params)
         handle_recv,
         (void*)session
     );
-    if (session->ev_recv == NULL) goto err0;
+    if (session->ev_recv == NULL) {
+        perror("event_new");
+        goto err0;
+    }
 
+    errno = 0;
     session->ev_send = event_new(
         session->params.event_base,
         session->params.socket,
@@ -84,20 +89,31 @@ session_t session_new(const struct session_params* params)
         handle_send,
         (void*)session
     );
-    if (session->ev_send == NULL) goto err1;
+    if (session->ev_send == NULL) {
+        perror("event_new");
+        goto err1;
+    }
 
+    errno = 0;
     session->ev_destroy = evtimer_new(
         session->params.event_base,
         handle_destroy,
         (void*)session
     );
-    if (session->ev_destroy == NULL) goto err2;
+    if (session->ev_destroy == NULL) {
+        perror("evtimer_new");
+        goto err2;
+    }
 
+    errno = 0;
     if (session->params.on_deliver) {
         session->recv_data.buffer = malloc(
             session->params.recv_buffer_size * sizeof(uint8_t)
         );
-        if (session->recv_data.buffer == NULL) goto err3;
+        if (session->recv_data.buffer == NULL) {
+            perror("malloc");
+            goto err3;
+        }
     }
 
     return session;
