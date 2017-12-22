@@ -1,7 +1,8 @@
 .PHONY : all clean
 
-CFLAGS := -Wall -std=c11 -pedantic -Werror
-LDFLAGS := -levent
+CFLAGS += -std=c11 -pedantic -Werror
+LDFLAGS += -levent
+
 DIRS := $(shell find . -type d)
 FILES := $(foreach dir, $(DIRS), $(wildcard $(dir)/*.c))
 OBJS := $(addsuffix .o, $(basename $(FILES)))
