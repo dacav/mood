@@ -1,4 +1,4 @@
-#include "signal_wrapper.h"
+#include "sigwrap.h"
 
 #include <errno.h>
 #include <string.h>

@@ -8,7 +8,7 @@
 #include "tcpsock.h"
 #include "server.h"
 #include "session.h"
-#include "signal_wrapper.h"
+#include "sigwrap.h"
 
 #define MAX_ACTIVE_SESSIONS 2
 
