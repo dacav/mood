@@ -142,12 +142,17 @@ int session_send_buffer(session_t session,
                         const void* data,
                         size_t size)
 {
-    errno = 0;
+    if (session->params.socket == -1) {
+        errno = ENOTCONN;
+        return -1;
+    }
+
     if (session->send_data.mode != WM_NONE) {
         errno = EBUSY;
         return -1;
     }
 
+    errno = 0;
     session->send_data.mode = WM_BUFFER;
     session->send_data.params.buffer.bytes = (const uint8_t *)data;
     session->send_data.params.buffer.offset = 0;
@@ -158,6 +163,11 @@ int session_send_buffer(session_t session,
 
 int session_sched_recv(session_t session)
 {
+    if (session->params.socket == -1) {
+        errno = ENOTCONN;
+        return -1;
+    }
+
     errno = 0;
     const int ret = event_add(
         session->ev_recv,
@@ -171,6 +181,11 @@ int session_sched_recv(session_t session)
 
 int session_sched_delete(session_t session)
 {
+    if (session->params.socket == -1) {
+        errno = EINVAL;
+        return -1;
+    }
+
     errno = 0;
     const struct timeval now = {0, 0};
     const int ret = event_add(session->ev_destroy, &now);
@@ -196,6 +211,7 @@ static int schedule_send(session_t session)
 static int check_params(const struct session_params* params)
 {
     /* -- 1. Static checks, just assertions -- */
+    assert(params->socket != -1);
     assert(params->on_error);
     assert(
         !params->on_deliver
@@ -204,7 +220,7 @@ static int check_params(const struct session_params* params)
 
     /* -- 2. Runtime-dependent situation checks -- */
     if (fcntl(params->socket, F_GETFL) == -1) {
-        perror("fcntl\n");
+        perror("fcntl");
         return -1;
     }
 
@@ -242,6 +258,11 @@ static void handle_destroy(int socket, short ev, void* arg)
     event_free(session->ev_destroy);
     event_free(session->ev_send);
     event_free(session->ev_recv);
+
+    if (session->params.on_deleted) {
+        session->params.socket = -1;    /* Flags destruction */
+        session->params.on_deleted(session);
+    }
     free(session);
 }
 
