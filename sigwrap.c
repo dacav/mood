@@ -58,13 +58,11 @@ sigwrap_t sigwrap_new(struct event_base *event_base,
 void sigwrap_del(sigwrap_t sigwrap)
 {
     while (sigwrap) {
-        fprintf(stderr, "sigwrap_del step\n");
         event_free(sigwrap->event);
         sigwrap_t next = sigwrap->next;
         free(sigwrap);
         sigwrap = next;
     }
-    fprintf(stderr, "sigwrap_del done\n");
 }
 
 static int set_event(struct event_base* event_base,
