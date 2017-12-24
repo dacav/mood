@@ -26,6 +26,8 @@ struct setup_conf
     /* Listen backlog */
     unsigned backlog;
 
+    size_t max_sessions;
+
     void* user_context;
     setup_on_accepted_cb_t on_accepted;
 };

@@ -11,8 +11,6 @@
 #include "session.h"
 #include "sigwrap.h"
 
-#define MAX_ACTIVE_SESSIONS 2
-
 struct session_slot
 {
     session_t session;
@@ -27,8 +25,9 @@ struct setup
     void* user_context;
     setup_on_accepted_cb_t on_accepted;
 
+    size_t max_sessions;
     size_t active_sessons;
-    struct session_slot session_slots[MAX_ACTIVE_SESSIONS];
+    struct session_slot *session_slots;
 };
 
 /* Subtasks of setup */
@@ -48,29 +47,38 @@ setup_t setup_new(const struct setup_conf* conf)
         goto err0;
     }
 
+    setup->session_slots = calloc(conf->max_sessions, sizeof(struct session_slot));
+    if (!setup->session_slots) {
+        perror("calloc");
+        goto err1;
+    }
+
     errno = 0;
     setup->event_base = event_base_new();
     if (!setup->event_base) {
         perror("event_base_new");
-        goto err1;
-    }
-
-    if (setup_server(setup, conf) == -1) {
         goto err2;
     }
 
-    if (setup_signals(setup) == -1) {
+    if (setup_server(setup, conf) == -1) {
         goto err3;
+    }
+
+    if (setup_signals(setup) == -1) {
+        goto err4;
     }
 
     setup->user_context = conf->user_context;
     setup->on_accepted = conf->on_accepted;
+    setup->max_sessions = conf->max_sessions;
     return setup;
 
-  err3:
+  err4:
     server_delete(setup->server);
-  err2:
+  err3:
     event_base_free(setup->event_base);
+  err2:
+    free(setup->session_slots);
   err1:
     free(setup);
   err0:
@@ -108,6 +116,7 @@ void setup_del(setup_t setup)
     sigwrap_del(setup->sigwrap);
     server_delete(setup->server);
     event_base_free(setup->event_base);
+    free(setup->session_slots);
     free(setup);
 }
 
@@ -156,10 +165,10 @@ static void on_accepted(server_t server, int clsock)
     }
 
     setup->session_slots[setup->active_sessons ++].session = new_session;
-    if (setup->active_sessons == MAX_ACTIVE_SESSIONS) {
+    if (setup->active_sessons == setup->max_sessions) {
         server_pause_accepting(setup->server);
     }
-    else assert(setup->active_sessons < MAX_ACTIVE_SESSIONS);
+    else assert(setup->active_sessons < setup->max_sessions);
 }
 
 static void handle_termination_by_signal(int signal, void* arg)
