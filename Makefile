@@ -1,6 +1,6 @@
 .PHONY : all clean
 
-CFLAGS += -std=c11 -pedantic -Werror
+CFLAGS += -std=c11 -pedantic -Werror -g
 LDFLAGS += -levent
 
 DIRS := $(shell find . -type d)
