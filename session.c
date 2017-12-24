@@ -172,7 +172,8 @@ int session_send_bytes(session_t session, const void* bytes, size_t len)
     if (copy == NULL) {
         return -1;
     }
-    int ret = session_send_buffer(session, memcpy(copy, bytes, len), len);
+    memcpy(copy, bytes, len);
+    int ret = session_send_buffer(session, copy, len);
     if (ret == -1) {
         free(copy);
     }
