@@ -9,7 +9,7 @@
 
 struct send_data_buffer
 {
-    const uint8_t *bytes;
+    uint8_t *bytes;
     off_t offset;
     size_t to_send;
 };
@@ -18,7 +18,7 @@ struct send_data
 {
     enum
     {
-        WM_NONE = 0,
+        WM_IDLE = 0,
         WM_BUFFER,
     } mode;
 
@@ -108,12 +108,17 @@ session_t session_new(const struct session_params* params)
     errno = 0;
     if (session->params.on_deliver) {
         session->recv_data.buffer = malloc(
-            session->params.recv_buffer_size * sizeof(uint8_t)
+            (1 + session->params.recv_buffer_size) * sizeof(uint8_t)
         );
         if (session->recv_data.buffer == NULL) {
             perror("malloc");
             goto err3;
         }
+
+        /* Ensuring there's always a '\0' at the end of the string. Even
+         * though no assumption is made on the payload, the terminator
+         * guarantees a correct string handling */
+        session->recv_data.buffer[session->params.recv_buffer_size] = '\0';
     }
 
     return session;
@@ -139,7 +144,7 @@ void* session_get_context(session_t session)
 }
 
 int session_send_buffer(session_t session,
-                        const void* data,
+                        void* data,
                         size_t size)
 {
     if (session->params.socket == -1) {
@@ -147,18 +152,36 @@ int session_send_buffer(session_t session,
         return -1;
     }
 
-    if (session->send_data.mode != WM_NONE) {
+    if (session->send_data.mode != WM_IDLE) {
         errno = EBUSY;
         return -1;
     }
 
     errno = 0;
     session->send_data.mode = WM_BUFFER;
-    session->send_data.params.buffer.bytes = (const uint8_t *)data;
+    session->send_data.params.buffer.bytes = (uint8_t *)data;
     session->send_data.params.buffer.offset = 0;
     session->send_data.params.buffer.to_send = size;
 
     return schedule_send(session);
+}
+
+int session_send_bytes(session_t session, const void* bytes, size_t len)
+{
+    char* copy = malloc(len);
+    if (copy == NULL) {
+        return -1;
+    }
+    int ret = session_send_buffer(session, memcpy(copy, bytes, len), len);
+    if (ret == -1) {
+        free(copy);
+    }
+    return ret;
+}
+
+int session_send_string(session_t session, const char* str)
+{
+    return session_send_bytes(session, str, strlen(str) + 1);
 }
 
 int session_sched_recv(session_t session)
@@ -263,6 +286,12 @@ static void handle_destroy(int socket, short ev, void* arg)
         session->params.socket = -1;    /* Flags destruction */
         session->params.on_deleted(session);
     }
+
+    struct send_data_buffer* buffer = &session->send_data.params.buffer;
+    if (buffer->bytes) {
+        free(buffer->bytes);
+        buffer->bytes = NULL;
+    }
     free(session);
 }
 
@@ -280,8 +309,15 @@ static void try_recv(session_t session)
     if (recv_size == -1) {
         session->params.on_error(session, "recv", errno);
     }
+    else if (recv_size == 0) {
+        session->params.on_end_of_stream(session);
+    }
     else {
         session->params.on_deliver(session, recvbuf, recv_size);
+
+        /* Not exhaustive, but could detect some exceeding of boundaries.
+         * We always want the terminator to be in place. */
+        assert(recvbuf[recvbuf_size] == '\0');
     }
 }
 
@@ -309,6 +345,9 @@ static void try_send_buffer(session_t session)
         }
     }
     else {
+        free(buffer->bytes);
+        buffer->bytes = NULL;
+        session->send_data.mode = WM_IDLE;
         session->params.on_send_done(session);
     }
 }
@@ -316,7 +355,7 @@ static void try_send_buffer(session_t session)
 static void try_send(session_t session)
 {
     switch (session->send_data.mode) {
-        case WM_NONE:
+        case WM_IDLE:
             assert(0);  /* by construction */
         case WM_BUFFER:
             try_send_buffer(session);

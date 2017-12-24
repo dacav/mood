@@ -34,8 +34,53 @@ session_t session_new(const struct session_params* params);
 
 void* session_get_context(session_t);
 
-int session_send_buffer(session_t, const void*, size_t);
+/* Send a buffer.
+ *
+ * The buffer is assumed to be dynamically allocated (via malloc),
+ * and its ownership is considered transferred to the session.
+ *
+ * Returns 0 on success and -1 on error. In case of error, errno is set, and
+ * the ownership of the input buffer is not taken in: the calling code is in
+ * charge of buffer deallocation.
+ * 
+ * Possible values for errno:
+ *  - ENOTCONN: The session has been terminated;
+ *  - EBUSY: A previously scheduled send operation is still in progress.
+ *  - Different values could be assigned by the underlying libevent calls.
+ */
+int session_send_buffer(session_t, void*, size_t);
 
+/* Send an array of bytes.
+ *
+ * The calling code retains ownership on the provided array of bytes. An
+ * internal copy of it is made for internal use.
+ *
+ * Returns 0 on success and -1 on error. In case of error, errno is set.
+ *
+ * Possible values for errno:
+ *  - The values from session_send_buffer
+ *  - The values from malloc (used internally);
+ */
+int session_send_bytes(session_t, const void*, size_t);
+
+/* Send a null-terminated string.
+ *
+ * The calling code retains ownership on the string. An internal copy of it
+ * is made for internal use.
+ *
+ * Returns 0 on success and -1 on error. In case of error, errno is set with
+ * the same errno values as in session_send_bytes.
+ */
+int session_send_string(session_t, const char*);
+
+/* Schedule a data reception.
+ *
+ * Returns 0 on success and -1 on error. In case of error, errno is set.
+ *
+ * Possible values for errno:
+ *  - ENOTCONN: The session has been terminated;
+ *  - Different values could be assigned by the underlying libevent calls.
+ */
 int session_sched_recv(session_t);
 
 int session_sched_delete(session_t);

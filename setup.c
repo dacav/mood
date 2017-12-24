@@ -1,5 +1,6 @@
 #include "setup.h"
 
+#include <assert.h>
 #include <stdlib.h>
 #include <errno.h>
 #include <string.h>
@@ -12,14 +13,22 @@
 
 #define MAX_ACTIVE_SESSIONS 2
 
+struct session_slot
+{
+    session_t session;
+};
+
 struct setup
 {
     struct event_base *event_base;
     server_t server;
     sigwrap_t sigwrap;
 
+    void* user_context;
+    setup_on_accepted_cb_t on_accepted;
+
     size_t active_sessons;
-    session_t sessions[MAX_ACTIVE_SESSIONS];
+    struct session_slot session_slots[MAX_ACTIVE_SESSIONS];
 };
 
 /* Subtasks of setup */
@@ -53,6 +62,9 @@ setup_t setup_new(const struct setup_conf* conf)
     if (setup_signals(setup) == -1) {
         goto err3;
     }
+
+    setup->user_context = conf->user_context;
+    setup->on_accepted = conf->on_accepted;
     return setup;
 
   err3:
@@ -65,9 +77,30 @@ setup_t setup_new(const struct setup_conf* conf)
     return NULL;
 }
 
+void* setup_get_user_context(setup_t setup)
+{
+    return setup->user_context;
+}
+
 struct event_base* setup_get_event_base(setup_t setup)
 {
     return setup->event_base;
+}
+
+void setup_notify_session_termination(setup_t setup, session_t session)
+{
+    for (unsigned i = 0; i < setup->active_sessons; i ++) {
+        if (setup->session_slots[i].session == session) {
+            setup->active_sessons --;
+            memcpy(
+                &setup->session_slots[i],
+                &setup->session_slots[setup->active_sessons],
+                sizeof(struct session_slot)
+            );
+            server_resume_accepting(setup->server);
+            break;
+        }
+    }
 }
 
 void setup_del(setup_t setup)
@@ -114,8 +147,19 @@ static int setup_signals(setup_t setup)
 
 static void on_accepted(server_t server, int clsock)
 {
-    fprintf(stderr, "flip off! (clsock=%i)\n", clsock);
-    close(clsock);
+    setup_t setup = server_get_context(server);
+
+    session_t new_session = setup->on_accepted(setup, clsock);
+    if (new_session == NULL) {
+        close(clsock);
+        return;
+    }
+
+    setup->session_slots[setup->active_sessons ++].session = new_session;
+    if (setup->active_sessons == MAX_ACTIVE_SESSIONS) {
+        server_pause_accepting(setup->server);
+    }
+    else assert(setup->active_sessons < MAX_ACTIVE_SESSIONS);
 }
 
 static void handle_termination_by_signal(int signal, void* arg)
@@ -128,7 +172,8 @@ static void handle_termination_by_signal(int signal, void* arg)
 static void shutdown_sessions(setup_t setup)
 {
     for (size_t i = 0; i < setup->active_sessons; i ++) {
-        session_sched_delete(setup->sessions[i]);
+        session_t session = setup->session_slots[i].session;
+        session_sched_delete(session);
     }
     setup->active_sessons = 0;
 }
