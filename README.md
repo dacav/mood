@@ -33,6 +33,10 @@ hierarchy:
 Rooms can have links to other rooms to define geography. Each NPC is a
 process which allows interaction via Telnet protocol.
 
+The funny part is that a room may as well reside on another server… which is
+just linked by means of a Gopher link. So immagine a world made of raspberry
+PI and/or random user machines… and people exploring them.
+
 Details are still foggy… but this should give you the idea…
 
 [gopher]: <https://en.wikipedia.org/wiki/Gopher_protocol>
