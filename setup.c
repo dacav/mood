@@ -22,6 +22,8 @@ struct setup
     server_t server;
     sigwrap_t sigwrap;
 
+    enum { READY, SHUTDOWN } state;
+
     void* user_context;
     setup_on_accepted_cb_t on_accepted;
 
@@ -68,6 +70,7 @@ setup_t setup_new(const struct setup_conf* conf)
         goto err4;
     }
 
+    setup->state = READY;
     setup->user_context = conf->user_context;
     setup->on_accepted = conf->on_accepted;
     setup->max_sessions = conf->max_sessions;
@@ -158,6 +161,11 @@ static void on_accepted(server_t server, int clsock)
 {
     setup_t setup = server_get_context(server);
 
+    if (setup->state == SHUTDOWN) {
+        close(clsock);
+        return;
+    }
+
     session_t new_session = setup->on_accepted(setup, clsock);
     if (new_session == NULL) {
         close(clsock);
@@ -180,6 +188,7 @@ static void handle_termination_by_signal(int signal, void* arg)
 
 static void shutdown_sessions(setup_t setup)
 {
+    setup->state = SHUTDOWN;
     for (size_t i = 0; i < setup->active_sessons; i ++) {
         session_t session = setup->session_slots[i].session;
         session_sched_delete(session);
