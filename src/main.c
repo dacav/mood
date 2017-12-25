@@ -14,8 +14,8 @@
  *  along with Mood.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "setup.h"
-#include "session.h"
+#include <libmood/setup.h>
+#include <libmood/session.h>
 
 #include <stdlib.h>
 #include <errno.h>

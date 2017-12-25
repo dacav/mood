@@ -14,8 +14,7 @@
  *  along with Mood.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "tcpsock.h"
-#include "error.h"
+#include <libmood/tcpsock.h>
 
 #include <arpa/inet.h>
 #include <netinet/in.h>

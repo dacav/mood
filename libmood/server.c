@@ -14,7 +14,7 @@
  *  along with Mood.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "server.h"
+#include <libmood/server.h>
 
 #include <stdlib.h>
 #include <string.h>

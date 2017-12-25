@@ -14,18 +14,17 @@
  *  along with Mood.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "setup.h"
-
 #include <assert.h>
 #include <stdlib.h>
 #include <errno.h>
 #include <string.h>
 #include <unistd.h>
 
-#include "tcpsock.h"
-#include "server.h"
-#include "session.h"
-#include "sigwrap.h"
+#include <libmood/server.h>
+#include <libmood/session.h>
+#include <libmood/setup.h>
+#include <libmood/sigwrap.h>
+#include <libmood/tcpsock.h>
 
 struct session_slot
 {
