@@ -26,5 +26,5 @@ AC_TYPE_UINT8_T
 AC_FUNC_MALLOC
 AC_CHECK_FUNCS([socket strerror])
 
-AC_CONFIG_FILES([libmood/Makefile src/Makefile Makefile])
+AC_CONFIG_FILES([libmoodio/Makefile src/Makefile Makefile])
 AC_OUTPUT

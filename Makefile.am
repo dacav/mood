@@ -1,1 +1,1 @@
-SUBDIRS = libmood src
+SUBDIRS = libmoodio src

@@ -14,7 +14,7 @@
  *  along with Mood.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <libmood/sigwrap.h>
+#include <libmoodio/sigwrap.h>
 
 #include <errno.h>
 #include <string.h>

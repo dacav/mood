@@ -14,7 +14,7 @@
  *  along with Mood.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <libmood/session.h>
+#include <libmoodio/session.h>
 
 #include <stdlib.h>
 #include <string.h>

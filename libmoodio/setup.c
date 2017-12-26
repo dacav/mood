@@ -20,11 +20,11 @@
 #include <string.h>
 #include <unistd.h>
 
-#include <libmood/server.h>
-#include <libmood/session.h>
-#include <libmood/setup.h>
-#include <libmood/sigwrap.h>
-#include <libmood/tcpsock.h>
+#include <libmoodio/server.h>
+#include <libmoodio/session.h>
+#include <libmoodio/setup.h>
+#include <libmoodio/sigwrap.h>
+#include <libmoodio/tcpsock.h>
 
 struct session_slot
 {
