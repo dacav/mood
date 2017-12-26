@@ -34,7 +34,7 @@ struct session_slot
 struct setup
 {
     struct event_base *event_base;
-    server_t server;
+    moodio_server_t server;
     moodio_sigwrap_t sigwrap;
 
     enum { READY, SHUTDOWN } state;
@@ -52,7 +52,7 @@ static int setup_server(setup_t, const struct setup_conf*);
 static int setup_signals(setup_t);
 
 /* Callbacks */
-static void on_accepted(server_t server, int clsock);
+static void on_accepted(moodio_server_t server, int clsock);
 static void handle_termination_by_signal(int signal, void* arg);
 static void shutdown_sessions(setup_t);
 
@@ -92,7 +92,7 @@ setup_t setup_new(const struct setup_conf* conf)
     return setup;
 
   err4:
-    server_delete(setup->server);
+    moodio_server_delete(setup->server);
   err3:
     event_base_free(setup->event_base);
   err2:
@@ -123,7 +123,7 @@ void setup_notify_session_termination(setup_t setup, session_t session)
                 &setup->session_slots[setup->active_sessons],
                 sizeof(struct session_slot)
             );
-            server_resume_accepting(setup->server);
+            moodio_server_resume_accepting(setup->server);
             break;
         }
     }
@@ -132,7 +132,7 @@ void setup_notify_session_termination(setup_t setup, session_t session)
 void setup_del(setup_t setup)
 {
     moodio_sigwrap_del(setup->sigwrap);
-    server_delete(setup->server);
+    moodio_server_delete(setup->server);
     event_base_free(setup->event_base);
     free(setup->session_slots);
     free(setup);
@@ -147,13 +147,13 @@ static int setup_server(setup_t setup, const struct setup_conf* conf)
     );
     if (server_sock == -1) return -1;
 
-    struct server_params server_params = {
+    struct moodio_server_params server_params = {
         .socket = server_sock,
         .event_base = setup->event_base,
         .on_accepted = on_accepted,
         .user_context = setup,
     };
-    setup->server = server_new(&server_params);
+    setup->server = moodio_server_new(&server_params);
     if (!setup->server) {
         close(server_sock);
         return -1;
@@ -172,9 +172,9 @@ static int setup_signals(setup_t setup)
     return setup->sigwrap ? 0 : -1;
 }
 
-static void on_accepted(server_t server, int clsock)
+static void on_accepted(moodio_server_t server, int clsock)
 {
-    setup_t setup = server_get_context(server);
+    setup_t setup = moodio_server_get_context(server);
 
     if (setup->state == SHUTDOWN) {
         close(clsock);
@@ -189,7 +189,7 @@ static void on_accepted(server_t server, int clsock)
 
     setup->session_slots[setup->active_sessons ++].session = new_session;
     if (setup->active_sessons == setup->max_sessions) {
-        server_pause_accepting(setup->server);
+        moodio_server_pause_accepting(setup->server);
     }
     else assert(setup->active_sessons < setup->max_sessions);
 }

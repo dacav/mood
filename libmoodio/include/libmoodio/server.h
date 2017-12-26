@@ -18,11 +18,11 @@
 
 #include <event2/event.h>
 
-typedef struct server* server_t;
+typedef struct moodio_server* moodio_server_t;
 
-typedef void (*server_accepted_cb_t)(server_t, int clientfd);
+typedef void (*server_accepted_cb_t)(moodio_server_t, int clientfd);
 
-struct server_params
+struct moodio_server_params
 {
     struct event_base* event_base;
     int socket;
@@ -30,8 +30,8 @@ struct server_params
     void *user_context;
 };
 
-server_t server_new(const struct server_params* params);
-void server_pause_accepting(server_t);
-void server_resume_accepting(server_t);
-void* server_get_context(server_t);
-void server_delete(server_t);
+moodio_server_t moodio_server_new(const struct moodio_server_params* params);
+void moodio_server_pause_accepting(moodio_server_t);
+void moodio_server_resume_accepting(moodio_server_t);
+void* moodio_server_get_context(moodio_server_t);
+void moodio_server_delete(moodio_server_t);

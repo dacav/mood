@@ -21,9 +21,9 @@
 #include <errno.h>
 #include <unistd.h>
 
-struct server
+struct moodio_server
 {
-    struct server_params params;
+    struct moodio_server_params params;
     struct event* ev_connect;
     enum {
         ACCEPT_CONTINUE,
@@ -33,15 +33,15 @@ struct server
 
 static void handle_connection(int, short, void*);
 
-server_t server_new(const struct server_params* params)
+moodio_server_t moodio_server_new(const struct moodio_server_params* params)
 {
-    server_t server = calloc(1, sizeof(struct server));
+    moodio_server_t server = calloc(1, sizeof(struct moodio_server));
     if (server == NULL) {
         perror("calloc");
         goto err0;
     }
 
-    memcpy(&server->params, params, sizeof(struct server_params));
+    memcpy(&server->params, params, sizeof(struct moodio_server_params));
     server->state = ACCEPT_CONTINUE;
 
     errno = 0;
@@ -73,26 +73,26 @@ server_t server_new(const struct server_params* params)
     return NULL;
 }
 
-void server_pause_accepting(server_t server)
+void moodio_server_pause_accepting(moodio_server_t server)
 {
     if (server->state == ACCEPT_PAUSE) return;
     event_del(server->ev_connect);
     server->state = ACCEPT_PAUSE;
 }
 
-void server_resume_accepting(server_t server)
+void moodio_server_resume_accepting(moodio_server_t server)
 {
     if (server->state == ACCEPT_CONTINUE) return;
     event_add(server->ev_connect, NULL);
     server->state = ACCEPT_CONTINUE;
 }
 
-void* server_get_context(server_t server)
+void* moodio_server_get_context(moodio_server_t server)
 {
     return server->params.user_context;
 }
 
-void server_delete(server_t server)
+void moodio_server_delete(moodio_server_t server)
 {
     event_free(server->ev_connect);
     close(server->params.socket);
@@ -107,7 +107,7 @@ static void handle_connection(int sock, short ev, void* arg)
         return;
     }
 
-    server_t server = (server_t) arg;
+    moodio_server_t server = (moodio_server_t) arg;
     server->params.on_accepted(server, clsock);
 
     if (server->state == ACCEPT_CONTINUE) {
