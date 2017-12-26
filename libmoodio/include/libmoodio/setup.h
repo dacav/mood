@@ -29,7 +29,7 @@ typedef struct setup* setup_t;
  * param: the new client socket;
  * returns: the new session object.
  */
-typedef session_t (*setup_on_accepted_cb_t)(setup_t, int clsock);
+typedef moodio_session_t (*setup_on_accepted_cb_t)(setup_t, int clsock);
 
 struct setup_conf
 {
@@ -54,6 +54,6 @@ void* setup_get_user_context(setup_t);
 
 struct event_base* setup_get_event_base(setup_t);
 
-void setup_notify_session_termination(setup_t, session_t);
+void setup_notify_session_termination(setup_t, moodio_session_t);
 
 void setup_del(setup_t);

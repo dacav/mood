@@ -28,7 +28,7 @@
 
 struct session_slot
 {
-    session_t session;
+    moodio_session_t session;
 };
 
 struct setup
@@ -113,7 +113,7 @@ struct event_base* setup_get_event_base(setup_t setup)
     return setup->event_base;
 }
 
-void setup_notify_session_termination(setup_t setup, session_t session)
+void setup_notify_session_termination(setup_t setup, moodio_session_t session)
 {
     for (unsigned i = 0; i < setup->active_sessons; i ++) {
         if (setup->session_slots[i].session == session) {
@@ -181,7 +181,7 @@ static void on_accepted(moodio_server_t server, int clsock)
         return;
     }
 
-    session_t new_session = setup->on_accepted(setup, clsock);
+    moodio_session_t new_session = setup->on_accepted(setup, clsock);
     if (new_session == NULL) {
         close(clsock);
         return;
@@ -205,8 +205,8 @@ static void shutdown_sessions(setup_t setup)
 {
     setup->state = SHUTDOWN;
     for (size_t i = 0; i < setup->active_sessons; i ++) {
-        session_t session = setup->session_slots[i].session;
-        session_sched_delete(session);
+        moodio_session_t session = setup->session_slots[i].session;
+        moodio_session_sched_delete(session);
     }
     setup->active_sessons = 0;
 }

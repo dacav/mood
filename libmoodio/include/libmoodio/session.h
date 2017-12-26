@@ -20,25 +20,25 @@
 #include <stdint.h>
 #include <event2/event.h>
 
-typedef struct session* session_t;
+typedef struct moodio_session* moodio_session_t;
 
-typedef void (*session_deliver_cb_t)(session_t, uint8_t *, size_t);
-typedef void (*session_send_done_cb_t)(session_t);
-typedef void (*session_end_of_stream_cb_t)(session_t);
-typedef void (*session_error_cb_t)(session_t, char* op, int errno_val);
-typedef void (*session_deleted_cb_t)(session_t);
+typedef void (*moodio_session_deliver_cb_t)(moodio_session_t, uint8_t *, size_t);
+typedef void (*moodio_session_send_done_cb_t)(moodio_session_t);
+typedef void (*moodio_session_end_of_stream_cb_t)(moodio_session_t);
+typedef void (*moodio_session_error_cb_t)(moodio_session_t, char* op, int errno_val);
+typedef void (*moodio_session_deleted_cb_t)(moodio_session_t);
 
-struct session_params
+struct moodio_session_params
 {
     struct event_base* event_base;
     int socket;
     size_t recv_buffer_size;
 
-    session_deliver_cb_t on_deliver;
-    session_send_done_cb_t on_send_done;
-    session_end_of_stream_cb_t on_end_of_stream;
-    session_error_cb_t on_error;
-    session_deleted_cb_t on_deleted;    /* optional */
+    moodio_session_deliver_cb_t on_deliver;
+    moodio_session_send_done_cb_t on_send_done;
+    moodio_session_end_of_stream_cb_t on_end_of_stream;
+    moodio_session_error_cb_t on_error;
+    moodio_session_deleted_cb_t on_deleted;    /* optional */
 
     struct timeval send_timeout;
     struct timeval recv_timeout;
@@ -46,9 +46,9 @@ struct session_params
     void *user_context;
 };
 
-session_t session_new(const struct session_params* params);
+moodio_session_t moodio_session_new(const struct moodio_session_params* params);
 
-void* session_get_context(session_t);
+void* moodio_session_get_context(moodio_session_t);
 
 /* Send a buffer.
  *
@@ -64,7 +64,7 @@ void* session_get_context(session_t);
  *  - EBUSY: A previously scheduled send operation is still in progress.
  *  - Different values could be assigned by the underlying libevent calls.
  */
-int session_send_buffer(session_t, void*, size_t);
+int moodio_session_send_buffer(moodio_session_t, void*, size_t);
 
 /* Send an array of bytes.
  *
@@ -74,10 +74,10 @@ int session_send_buffer(session_t, void*, size_t);
  * Returns 0 on success and -1 on error. In case of error, errno is set.
  *
  * Possible values for errno:
- *  - The values from session_send_buffer
+ *  - The values from moodio_session_send_buffer
  *  - The values from malloc (used internally);
  */
-int session_send_bytes(session_t, const void*, size_t);
+int moodio_session_send_bytes(moodio_session_t, const void*, size_t);
 
 /* Send a null-terminated string.
  *
@@ -85,9 +85,9 @@ int session_send_bytes(session_t, const void*, size_t);
  * is made for internal use.
  *
  * Returns 0 on success and -1 on error. In case of error, errno is set with
- * the same errno values as in session_send_bytes.
+ * the same errno values as in moodio_session_send_bytes.
  */
-int session_send_string(session_t, const char*);
+int moodio_session_send_string(moodio_session_t, const char*);
 
 /* Schedule a data reception.
  *
@@ -97,6 +97,6 @@ int session_send_string(session_t, const char*);
  *  - ENOTCONN: The session has been terminated;
  *  - Different values could be assigned by the underlying libevent calls.
  */
-int session_sched_recv(session_t);
+int moodio_session_sched_recv(moodio_session_t);
 
-int session_sched_delete(session_t);
+int moodio_session_sched_delete(moodio_session_t);

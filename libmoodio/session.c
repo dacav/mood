@@ -49,9 +49,9 @@ struct recv_data
     uint8_t *buffer;
 };
 
-struct session
+struct moodio_session
 {
-    struct session_params params;
+    struct moodio_session_params params;
 
     struct event* ev_recv;
     struct event* ev_send;
@@ -61,28 +61,28 @@ struct session
     struct send_data send_data;
 };
 
-static int check_params(const struct session_params* params);
-static int schedule_send(session_t);
+static int check_params(const struct moodio_session_params* params);
+static int schedule_send(moodio_session_t);
 static void handle_recv(int, short, void*);
 static void handle_send(int, short, void*);
 static void handle_destroy(int, short, void*);
-static void try_recv(session_t);
-static void try_send(session_t);
+static void try_recv(moodio_session_t);
+static void try_send(moodio_session_t);
 
-session_t session_new(const struct session_params* params)
+moodio_session_t moodio_session_new(const struct moodio_session_params* params)
 {
     if (check_params(params) == -1) {
         fprintf(stderr, "aborting session creation\n");
         return NULL;
     }
 
-    session_t session = calloc(1, sizeof(struct session));
+    moodio_session_t session = calloc(1, sizeof(struct moodio_session));
     if (session == NULL) {
         perror("calloc");
         return NULL;
     }
 
-    memcpy(&session->params, params, sizeof(struct session_params));
+    memcpy(&session->params, params, sizeof(struct moodio_session_params));
 
     errno = 0;
     session->ev_recv = event_new(
@@ -154,14 +154,14 @@ session_t session_new(const struct session_params* params)
     return NULL;
 }
 
-void* session_get_context(session_t session)
+void* moodio_session_get_context(moodio_session_t session)
 {
     return session->params.user_context;
 }
 
-int session_send_buffer(session_t session,
-                        void* data,
-                        size_t size)
+int moodio_session_send_buffer(moodio_session_t session,
+                               void* data,
+                               size_t size)
 {
     if (session->params.socket == -1) {
         errno = ENOTCONN;
@@ -182,26 +182,28 @@ int session_send_buffer(session_t session,
     return schedule_send(session);
 }
 
-int session_send_bytes(session_t session, const void* bytes, size_t len)
+int moodio_session_send_bytes(moodio_session_t session,
+                              const void* bytes,
+                              size_t len)
 {
     char* copy = malloc(len);
     if (copy == NULL) {
         return -1;
     }
     memcpy(copy, bytes, len);
-    int ret = session_send_buffer(session, copy, len);
+    int ret = moodio_session_send_buffer(session, copy, len);
     if (ret == -1) {
         free(copy);
     }
     return ret;
 }
 
-int session_send_string(session_t session, const char* str)
+int moodio_session_send_string(moodio_session_t session, const char* str)
 {
-    return session_send_bytes(session, str, strlen(str) + 1);
+    return moodio_session_send_bytes(session, str, strlen(str) + 1);
 }
 
-int session_sched_recv(session_t session)
+int moodio_session_sched_recv(moodio_session_t session)
 {
     if (session->params.socket == -1) {
         errno = ENOTCONN;
@@ -219,7 +221,7 @@ int session_sched_recv(session_t session)
     return ret;
 }
 
-int session_sched_delete(session_t session)
+int moodio_session_sched_delete(moodio_session_t session)
 {
     if (session->params.socket == -1) {
         errno = EINVAL;
@@ -235,7 +237,7 @@ int session_sched_delete(session_t session)
     return ret;
 }
 
-static int schedule_send(session_t session)
+static int schedule_send(moodio_session_t session)
 {
     errno = 0;
     const int ret = event_add(
@@ -248,7 +250,7 @@ static int schedule_send(session_t session)
     return ret;
 }
 
-static int check_params(const struct session_params* params)
+static int check_params(const struct moodio_session_params* params)
 {
     /* -- 1. Static checks, just assertions -- */
     assert(params->socket != -1);
@@ -269,7 +271,7 @@ static int check_params(const struct session_params* params)
 
 static void handle_recv(int socket, short what, void* arg)
 {
-    session_t session = (session_t)arg;
+    moodio_session_t session = (moodio_session_t)arg;
     if (what == EV_TIMEOUT) {
         session->params.on_error(session, "recv", ETIMEDOUT);
     }
@@ -280,7 +282,7 @@ static void handle_recv(int socket, short what, void* arg)
 
 static void handle_send(int socket, short what, void* arg)
 {
-    session_t session = (session_t)arg;
+    moodio_session_t session = (moodio_session_t)arg;
     if (what == EV_TIMEOUT) {
         session->params.on_error(session, "send", ETIMEDOUT);
     }
@@ -291,7 +293,7 @@ static void handle_send(int socket, short what, void* arg)
 
 static void handle_destroy(int socket, short ev, void* arg)
 {
-    session_t session = (session_t)arg;
+    moodio_session_t session = (moodio_session_t)arg;
 
     close(session->params.socket);
     free(session->recv_data.buffer);
@@ -312,7 +314,7 @@ static void handle_destroy(int socket, short ev, void* arg)
     free(session);
 }
 
-static void try_recv(session_t session)
+static void try_recv(moodio_session_t session)
 {
     const size_t recvbuf_size = session->params.recv_buffer_size;
     uint8_t * const recvbuf = session->recv_data.buffer;
@@ -338,7 +340,7 @@ static void try_recv(session_t session)
     }
 }
 
-static void try_send_buffer(session_t session)
+static void try_send_buffer(moodio_session_t session)
 {
     const int sock = session->params.socket;
     struct send_data_buffer* buffer = &session->send_data.params.buffer;
@@ -369,7 +371,7 @@ static void try_send_buffer(session_t session)
     }
 }
 
-static void try_send(session_t session)
+static void try_send(moodio_session_t session)
 {
     switch (session->send_data.mode) {
         case WM_IDLE:
