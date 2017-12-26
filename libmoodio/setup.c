@@ -140,7 +140,7 @@ void setup_del(setup_t setup)
 
 static int setup_server(setup_t setup, const struct setup_conf* conf)
 {
-    int server_sock = tcpsock_serve(
+    int server_sock = moodio_tcpsock_serve(
         conf->ip_bind_address,
         conf->tcp_port,
         conf->backlog

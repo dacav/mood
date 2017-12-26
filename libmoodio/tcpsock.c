@@ -25,9 +25,9 @@
 #include <string.h>
 #include <errno.h>
 
-int tcpsock_serve(const char* bind_addr,
-                  in_port_t port,
-                  unsigned backlog)
+int moodio_tcpsock_serve(const char* bind_addr,
+                         in_port_t port,
+                         unsigned backlog)
 {
     struct sockaddr_in6 addr = {
         .sin6_family = AF_INET6,
