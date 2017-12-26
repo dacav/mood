@@ -31,7 +31,7 @@ struct session_slot
     moodio_session_t session;
 };
 
-struct setup
+struct moodio_setup
 {
     struct event_base *event_base;
     moodio_server_t server;
@@ -40,7 +40,7 @@ struct setup
     enum { READY, SHUTDOWN } state;
 
     void* user_context;
-    setup_on_accepted_cb_t on_accepted;
+    moodio_setup_on_accepted_cb_t on_accepted;
 
     size_t max_sessions;
     size_t active_sessons;
@@ -48,17 +48,18 @@ struct setup
 };
 
 /* Subtasks of setup */
-static int setup_server(setup_t, const struct setup_conf*);
-static int setup_signals(setup_t);
+static int setup_server(moodio_setup_t,
+                        const struct moodio_setup_conf*);
+static int setup_signals(moodio_setup_t);
 
 /* Callbacks */
 static void on_accepted(moodio_server_t server, int clsock);
 static void handle_termination_by_signal(int signal, void* arg);
-static void shutdown_sessions(setup_t);
+static void shutdown_sessions(moodio_setup_t);
 
-setup_t setup_new(const struct setup_conf* conf)
+moodio_setup_t moodio_setup_new(const struct moodio_setup_conf* conf)
 {
-    setup_t setup = calloc(1, sizeof(struct setup));
+    moodio_setup_t setup = calloc(1, sizeof(struct moodio_setup));
     if (!setup) {
         perror("calloc");
         goto err0;
@@ -103,17 +104,18 @@ setup_t setup_new(const struct setup_conf* conf)
     return NULL;
 }
 
-void* setup_get_user_context(setup_t setup)
+void* moodio_setup_get_user_context(moodio_setup_t setup)
 {
     return setup->user_context;
 }
 
-struct event_base* setup_get_event_base(setup_t setup)
+struct event_base* moodio_setup_get_event_base(moodio_setup_t setup)
 {
     return setup->event_base;
 }
 
-void setup_notify_session_termination(setup_t setup, moodio_session_t session)
+void moodio_setup_notify_session_termination(moodio_setup_t setup,
+                                             moodio_session_t session)
 {
     for (unsigned i = 0; i < setup->active_sessons; i ++) {
         if (setup->session_slots[i].session == session) {
@@ -129,7 +131,7 @@ void setup_notify_session_termination(setup_t setup, moodio_session_t session)
     }
 }
 
-void setup_del(setup_t setup)
+void moodio_setup_del(moodio_setup_t setup)
 {
     moodio_sigwrap_del(setup->sigwrap);
     moodio_server_delete(setup->server);
@@ -138,7 +140,8 @@ void setup_del(setup_t setup)
     free(setup);
 }
 
-static int setup_server(setup_t setup, const struct setup_conf* conf)
+static int setup_server(moodio_setup_t setup,
+                        const struct moodio_setup_conf* conf)
 {
     int server_sock = moodio_tcpsock_serve(
         conf->ip_bind_address,
@@ -161,7 +164,7 @@ static int setup_server(setup_t setup, const struct setup_conf* conf)
     return 0;
 }
 
-static int setup_signals(setup_t setup)
+static int setup_signals(moodio_setup_t setup)
 {
     struct moodio_sigwrap_setting signals[] = {
         {SIGINT, handle_termination_by_signal, setup},
@@ -174,7 +177,7 @@ static int setup_signals(setup_t setup)
 
 static void on_accepted(moodio_server_t server, int clsock)
 {
-    setup_t setup = moodio_server_get_context(server);
+    moodio_setup_t setup = moodio_server_get_context(server);
 
     if (setup->state == SHUTDOWN) {
         close(clsock);
@@ -196,12 +199,12 @@ static void on_accepted(moodio_server_t server, int clsock)
 
 static void handle_termination_by_signal(int signal, void* arg)
 {
-    setup_t setup = (setup_t)arg;
+    moodio_setup_t setup = (moodio_setup_t)arg;
     shutdown_sessions(setup);
     event_base_loopexit(setup->event_base, NULL);
 }
 
-static void shutdown_sessions(setup_t setup)
+static void shutdown_sessions(moodio_setup_t setup)
 {
     setup->state = SHUTDOWN;
     for (size_t i = 0; i < setup->active_sessons; i ++) {

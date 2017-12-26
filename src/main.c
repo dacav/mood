@@ -21,7 +21,7 @@
 #include <errno.h>
 #include <string.h>
 
-static moodio_session_t on_accepted(setup_t setup, int clsock);
+static moodio_session_t on_accepted(moodio_setup_t setup, int clsock);
 static void on_deliver(moodio_session_t, uint8_t *, size_t);
 static void on_send_done(moodio_session_t);
 static void on_end_of_stream(moodio_session_t);
@@ -30,7 +30,7 @@ static void on_deleted(moodio_session_t);
 
 int main (int argc, char **argv)
 {
-    struct setup_conf setup_conf = {
+    struct moodio_setup_conf setup_conf = {
         .ip_bind_address = "::1",
         .tcp_port = 7070,
         .backlog = 3,
@@ -38,26 +38,26 @@ int main (int argc, char **argv)
         .user_context = NULL,
         .on_accepted = on_accepted
     };
-    setup_t setup = setup_new(&setup_conf);
+    moodio_setup_t setup = moodio_setup_new(&setup_conf);
     if (!setup) {
         return EXIT_FAILURE;
     }
 
     errno = 0;
-    if (event_base_dispatch(setup_get_event_base(setup)) == -1) {
+    if (event_base_dispatch(moodio_setup_get_event_base(setup)) == -1) {
         perror("event_base_dispatch");
         return EXIT_FAILURE;
     }
 
-    setup_del(setup);
+    moodio_setup_del(setup);
 
     return EXIT_SUCCESS;
 }
 
-static moodio_session_t on_accepted(setup_t setup, int clsock)
+static moodio_session_t on_accepted(moodio_setup_t setup, int clsock)
 {
     struct moodio_session_params params = {
-        .event_base = setup_get_event_base(setup),
+        .event_base = moodio_setup_get_event_base(setup),
         .socket = clsock,
         .recv_buffer_size = 512,
         .on_deliver = on_deliver,
@@ -124,6 +124,6 @@ static void on_error(moodio_session_t session, char* op, int errno_val)
 static void on_deleted(moodio_session_t session)
 {
     fprintf(stderr, "%p: deleted\n", (void*)session);
-    setup_t setup = (setup_t) moodio_session_get_context(session);
-    setup_notify_session_termination(setup, session);
+    moodio_setup_t setup = (moodio_setup_t) moodio_session_get_context(session);
+    moodio_setup_notify_session_termination(setup, session);
 }

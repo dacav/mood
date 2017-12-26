@@ -21,7 +21,7 @@
 
 #include "session.h"
 
-typedef struct setup* setup_t;
+typedef struct moodio_setup* moodio_setup_t;
 
 /* Invoked when a new inbound connection is accepted.
  *
@@ -29,9 +29,10 @@ typedef struct setup* setup_t;
  * param: the new client socket;
  * returns: the new session object.
  */
-typedef moodio_session_t (*setup_on_accepted_cb_t)(setup_t, int clsock);
+typedef moodio_session_t (*moodio_setup_on_accepted_cb_t)(moodio_setup_t,
+                                                          int clsock);
 
-struct setup_conf
+struct moodio_setup_conf
 {
     /* Bind address (IPv6 or IPv4-mapped-on-IPv6). */
     const char* ip_bind_address;
@@ -45,15 +46,15 @@ struct setup_conf
     size_t max_sessions;
 
     void* user_context;
-    setup_on_accepted_cb_t on_accepted;
+    moodio_setup_on_accepted_cb_t on_accepted;
 };
 
-setup_t setup_new(const struct setup_conf* conf);
+moodio_setup_t moodio_setup_new(const struct moodio_setup_conf* conf);
 
-void* setup_get_user_context(setup_t);
+void* moodio_setup_get_user_context(moodio_setup_t);
 
-struct event_base* setup_get_event_base(setup_t);
+struct event_base* moodio_setup_get_event_base(moodio_setup_t);
 
-void setup_notify_session_termination(setup_t, moodio_session_t);
+void moodio_setup_notify_session_termination(moodio_setup_t, moodio_session_t);
 
-void setup_del(setup_t);
+void moodio_setup_del(moodio_setup_t);
