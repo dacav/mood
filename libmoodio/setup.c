@@ -35,7 +35,7 @@ struct setup
 {
     struct event_base *event_base;
     server_t server;
-    sigwrap_t sigwrap;
+    moodio_sigwrap_t sigwrap;
 
     enum { READY, SHUTDOWN } state;
 
@@ -131,7 +131,7 @@ void setup_notify_session_termination(setup_t setup, session_t session)
 
 void setup_del(setup_t setup)
 {
-    sigwrap_del(setup->sigwrap);
+    moodio_sigwrap_del(setup->sigwrap);
     server_delete(setup->server);
     event_base_free(setup->event_base);
     free(setup->session_slots);
@@ -163,12 +163,12 @@ static int setup_server(setup_t setup, const struct setup_conf* conf)
 
 static int setup_signals(setup_t setup)
 {
-    struct sigwrap_setting signals[] = {
+    struct moodio_sigwrap_setting signals[] = {
         {SIGINT, handle_termination_by_signal, setup},
         {SIGTERM, handle_termination_by_signal, setup},
         {-1, NULL, NULL}
     };
-    setup->sigwrap = sigwrap_new(setup->event_base, signals);
+    setup->sigwrap = moodio_sigwrap_new(setup->event_base, signals);
     return setup->sigwrap ? 0 : -1;
 }
 

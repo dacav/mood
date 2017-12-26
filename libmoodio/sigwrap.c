@@ -20,20 +20,20 @@
 #include <string.h>
 #include <stdlib.h>
 
-struct sigwrap
+struct moodio_sigwrap
 {
     struct event* event;
-    sigwrap_t next;
-    struct sigwrap_setting setting;
+    moodio_sigwrap_t next;
+    struct moodio_sigwrap_setting setting;
 };
 
 static int set_event(struct event_base* event_base,
-                     sigwrap_t sigwrap,
+                     moodio_sigwrap_t sigwrap,
                      int signal);
 static void handler(int fd, short ev, void* arg);
 
-sigwrap_t sigwrap_new(struct event_base *event_base,
-                      const struct sigwrap_setting* setting)
+moodio_sigwrap_t moodio_sigwrap_new(struct event_base *event_base,
+                                    const struct moodio_sigwrap_setting* setting)
 {
     errno = 0;
     if (!setting->callback) {
@@ -41,7 +41,7 @@ sigwrap_t sigwrap_new(struct event_base *event_base,
         return NULL;
     }
 
-    sigwrap_t sigwrap = calloc(1, sizeof(struct sigwrap));
+    moodio_sigwrap_t sigwrap = calloc(1, sizeof(struct moodio_sigwrap));
     if (sigwrap == NULL) {
         perror("calloc");
         return NULL;
@@ -49,18 +49,18 @@ sigwrap_t sigwrap_new(struct event_base *event_base,
 
     for (;;) {
         if (set_event(event_base, sigwrap, setting->signal) == -1) {
-            sigwrap_del(sigwrap);
+            moodio_sigwrap_del(sigwrap);
             return NULL;
         }
-        memcpy(&sigwrap->setting, setting, sizeof(struct sigwrap_setting));
+        memcpy(&sigwrap->setting, setting, sizeof(struct moodio_sigwrap_setting));
 
         setting ++;
         if (!setting->callback) break;  /* Guard object reached */
 
-        sigwrap_t prev = calloc(1, sizeof(struct sigwrap));
+        moodio_sigwrap_t prev = calloc(1, sizeof(struct moodio_sigwrap));
         if (!prev) {
             perror("calloc");
-            sigwrap_del(sigwrap);
+            moodio_sigwrap_del(sigwrap);
             return NULL;
         }
 
@@ -71,18 +71,18 @@ sigwrap_t sigwrap_new(struct event_base *event_base,
     return sigwrap;
 }
 
-void sigwrap_del(sigwrap_t sigwrap)
+void moodio_sigwrap_del(moodio_sigwrap_t sigwrap)
 {
     while (sigwrap) {
         event_free(sigwrap->event);
-        sigwrap_t next = sigwrap->next;
+        moodio_sigwrap_t next = sigwrap->next;
         free(sigwrap);
         sigwrap = next;
     }
 }
 
 static int set_event(struct event_base* event_base,
-                     sigwrap_t sigwrap,
+                     moodio_sigwrap_t sigwrap,
                      int signal)
 {
     errno = 0;
@@ -103,7 +103,7 @@ static int set_event(struct event_base* event_base,
 
 static void handler(int fd, short ev, void* arg)
 {
-    sigwrap_t sigwrap = (sigwrap_t)arg;
+    moodio_sigwrap_t sigwrap = (moodio_sigwrap_t)arg;
     sigwrap->setting.callback(
         sigwrap->setting.signal,
         sigwrap->setting.user_context
