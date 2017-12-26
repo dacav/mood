@@ -1,4 +1,4 @@
-AM_CPPFLAGS = -Iinclude
+AM_CFLAGS = -Iinclude $(libevent_CFLAGS)
 
 noinst_LIBRARIES = libmood.a
 libmood_a_SOURCES = \

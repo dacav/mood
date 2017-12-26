@@ -11,7 +11,7 @@ AM_PROG_AR
 AC_PROG_RANLIB
 
 # Checks for libraries.
-AC_CHECK_LIB([event], [event_base_new])
+PKG_CHECK_MODULES([libevent], [libevent >= 2])
 
 # Checks for header files.
 AC_CHECK_HEADERS([arpa/inet.h fcntl.h netinet/in.h stdint.h stdlib.h string.h sys/socket.h sys/time.h unistd.h])
