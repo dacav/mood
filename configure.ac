@@ -24,7 +24,14 @@ AC_TYPE_UINT8_T
 
 # Checks for library functions.
 AC_FUNC_MALLOC
+AC_FUNC_REALLOC
 AC_CHECK_FUNCS([socket strerror])
 
-AC_CONFIG_FILES([libmoodio/Makefile src/Makefile Makefile])
+AC_CONFIG_FILES([
+    libmoodio/Makefile
+    libmoodgoph/Makefile
+    libmoodgoph/tests/Makefile
+    src/Makefile
+    Makefile
+])
 AC_OUTPUT
