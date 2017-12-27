@@ -27,7 +27,8 @@
 
 int moodio_tcpsock_serve(const char* bind_addr,
                          in_port_t port,
-                         unsigned backlog)
+                         unsigned backlog,
+                         bool reuse_addr)
 {
     struct sockaddr_in6 addr = {
         .sin6_family = AF_INET6,
@@ -48,6 +49,12 @@ int moodio_tcpsock_serve(const char* bind_addr,
     if (sock == -1) {
         perror("socket");
         return -1;
+    }
+
+    if (reuse_addr && setsockopt(sock, SOL_SOCKET, SO_REUSEADDR,
+                                 &(int){ 1 }, sizeof(int)) == -1) {
+        perror("setsockopt");
+        close(sock);
     }
 
     if (bind(sock, (struct sockaddr*)&addr, sizeof(addr)) == -1) {

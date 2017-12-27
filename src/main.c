@@ -34,6 +34,7 @@ int main (int argc, char **argv)
         .ip_bind_address = "::1",
         .tcp_port = 7070,
         .backlog = 3,
+        .reuse_addr = true,
         .max_sessions = 8,
         .user_context = NULL,
         .on_accepted = on_accepted

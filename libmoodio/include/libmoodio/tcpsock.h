@@ -17,7 +17,9 @@
 #pragma once
 
 #include <netinet/in.h>
+#include <stdbool.h>
 
 int moodio_tcpsock_serve(const char* bind_addr,
                          in_port_t port,
-                         unsigned backlog);
+                         unsigned backlog,
+                         bool reuse_addr);

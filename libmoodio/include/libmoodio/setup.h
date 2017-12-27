@@ -18,6 +18,7 @@
 
 #include <event2/event.h>
 #include <netinet/in.h>
+#include <stdbool.h>
 
 #include "session.h"
 
@@ -42,6 +43,8 @@ struct moodio_setup_conf
 
     /* Listen backlog */
     unsigned backlog;
+
+    bool reuse_addr;
 
     size_t max_sessions;
 

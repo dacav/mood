@@ -146,7 +146,8 @@ static int setup_server(moodio_setup_t setup,
     int server_sock = moodio_tcpsock_serve(
         conf->ip_bind_address,
         conf->tcp_port,
-        conf->backlog
+        conf->backlog,
+        conf->reuse_addr
     );
     if (server_sock == -1) return -1;
 
