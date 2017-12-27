@@ -14,27 +14,19 @@
  *  along with Mood.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
-
 #include <libmoodgoph/request.h>
+#include <libmoodgoph/node_filesystem.h>
 
-typedef struct moodgoph_node* moodgoph_node_t;
+#include <stdio.h>
 
-typedef void (*moodgoph_node_serve_cb_t)(moodgoph_node_t, moodgoph_request_t);
-typedef void (*moodgoph_node_delete_cb_t)(moodgoph_node_t);
-
-struct moodgoph_node_params
+int main(int argc, char** argv)
 {
-    const char* name;
-    void* context;
-    moodgoph_node_serve_cb_t serve_cb;
-    moodgoph_node_delete_cb_t delete_cb;
-};
+    char buffer[] = "/goat/race";
+    moodgoph_request_t request = moodgoph_request_new(buffer, sizeof(buffer));
 
-moodgoph_node_t moodgoph_node_new(const struct moodgoph_node_params*);
+    moodgoph_node_t node = moodgoph_node_filesystem_new("tmp", "/tmp/");
+    moodgoph_node_serve(node, request);
+    moodgoph_node_delete(node);
 
-void* moodgoph_node_get_context(moodgoph_node_t);
-const char* moodgoph_node_get_name(moodgoph_node_t);
-void moodgoph_node_serve(moodgoph_node_t, moodgoph_request_t);
-
-void moodgoph_node_delete(moodgoph_node_t);
+    moodgoph_request_delete(request);
+}

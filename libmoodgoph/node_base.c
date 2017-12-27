@@ -24,34 +24,39 @@ struct moodgoph_node
     char* name;
     void* context;
     moodgoph_node_serve_cb_t serve_cb;
+    moodgoph_node_delete_cb_t delete_cb;
 };
 
-moodgoph_node_t moodgoph_node_new(const char* name,
-                                  void* context,
-                                  moodgoph_node_serve_cb_t serve_cb)
+moodgoph_node_t moodgoph_node_new(const struct moodgoph_node_params* params)
 {
     moodgoph_node_t node = malloc(sizeof(struct moodgoph_node));
     if (!node) {
         return NULL;
     }
 
-    const size_t len = 1 + strlen(name);
-    node->name = malloc(sizeof(char) * len);
-    if (!node->name) {
+    const size_t len = 1 + strlen(params->name);
+    char* name_copy = malloc(sizeof(char) * len);
+    if (!name_copy) {
         free(node);
         return NULL;
     }
+    memcpy(name_copy, params->name, len);
+    node->name = name_copy;
+    node->context = params->context;
+    node->serve_cb = params->serve_cb;
+    node->delete_cb = params->delete_cb;
 
-    node->context = context;
-    node->serve_cb = serve_cb;
-
-    memcpy(node->name, name, len);
     return node;
 }
 
 void* moodgoph_node_get_context(moodgoph_node_t node)
 {
     return node->context;
+}
+
+const char* moodgoph_node_get_name(moodgoph_node_t node)
+{
+    return node->name;
 }
 
 void moodgoph_node_serve(moodgoph_node_t node, moodgoph_request_t request)
@@ -61,6 +66,9 @@ void moodgoph_node_serve(moodgoph_node_t node, moodgoph_request_t request)
 
 void moodgoph_node_delete(moodgoph_node_t node)
 {
+    if (node->delete_cb) {
+        node->delete_cb(node);
+    }
     free(node->name);
     free(node);
 }

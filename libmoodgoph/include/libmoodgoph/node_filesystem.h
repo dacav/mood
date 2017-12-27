@@ -16,25 +16,9 @@
 
 #pragma once
 
-#include <libmoodgoph/request.h>
+#include <libmoodgoph/node_base.h>
 
 typedef struct moodgoph_node* moodgoph_node_t;
 
-typedef void (*moodgoph_node_serve_cb_t)(moodgoph_node_t, moodgoph_request_t);
-typedef void (*moodgoph_node_delete_cb_t)(moodgoph_node_t);
-
-struct moodgoph_node_params
-{
-    const char* name;
-    void* context;
-    moodgoph_node_serve_cb_t serve_cb;
-    moodgoph_node_delete_cb_t delete_cb;
-};
-
-moodgoph_node_t moodgoph_node_new(const struct moodgoph_node_params*);
-
-void* moodgoph_node_get_context(moodgoph_node_t);
-const char* moodgoph_node_get_name(moodgoph_node_t);
-void moodgoph_node_serve(moodgoph_node_t, moodgoph_request_t);
-
-void moodgoph_node_delete(moodgoph_node_t);
+moodgoph_node_t moodgoph_node_filesystem_new(const char* name,
+                                             const char* base_dir);
