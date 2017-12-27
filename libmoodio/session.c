@@ -221,20 +221,16 @@ int moodio_session_sched_recv(moodio_session_t session)
     return ret;
 }
 
-int moodio_session_sched_delete(moodio_session_t session)
+void moodio_session_sched_delete(moodio_session_t session)
 {
-    if (session->params.socket == -1) {
-        errno = EINVAL;
-        return -1;
+    if (session->params.socket != -1) {
+        errno = 0;
+        const struct timeval now = {0, 0};
+        const int ret = event_add(session->ev_destroy, &now);
+        if (ret == -1) {
+            perror("sched_delete: event_add");
+        }
     }
-
-    errno = 0;
-    const struct timeval now = {0, 0};
-    const int ret = event_add(session->ev_destroy, &now);
-    if (ret == -1) {
-        perror("sched_delete: event_add");
-    }
-    return ret;
 }
 
 static int schedule_send(moodio_session_t session)

@@ -99,4 +99,4 @@ int moodio_session_send_string(moodio_session_t, const char*);
  */
 int moodio_session_sched_recv(moodio_session_t);
 
-int moodio_session_sched_delete(moodio_session_t);
+void moodio_session_sched_delete(moodio_session_t);
