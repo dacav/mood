@@ -26,6 +26,7 @@ static const char* SEPARATORS = "/";
 
 struct moodgoph_request
 {
+    size_t querylen;
     char* seek_start;
     char* next;
 };
@@ -40,7 +41,7 @@ moodgoph_request_t moodgoph_request_new(char* query, size_t querylen)
         return NULL;
     }
 
-    (void)sanitize_string(query, querylen);
+    request->querylen = sanitize_string(query, querylen);
     request->seek_start = query;
     goto_next(request);
 
@@ -54,6 +55,11 @@ const char* moodgoph_request_next_token(moodgoph_request_t request)
         goto_next(request);
     }
     return next;
+}
+
+size_t moodgoph_request_get_query_len(moodgoph_request_t request)
+{
+    return request->querylen;
 }
 
 void moodgoph_request_delete(moodgoph_request_t request)

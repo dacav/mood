@@ -33,4 +33,6 @@ moodgoph_request_t moodgoph_request_new(char* query, size_t querylen);
 
 const char* moodgoph_request_next_token(moodgoph_request_t request);
 
+size_t moodgoph_request_get_query_len(moodgoph_request_t request);
+
 void moodgoph_request_delete(moodgoph_request_t);

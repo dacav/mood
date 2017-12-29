@@ -80,7 +80,7 @@ static void test_empty_query()
 
 static void test_empty_tail()
 {
-    char text[] = "/foo/bar////";
+    char text[] = "/foo///bar////";
     const char* token;
 
     moodgoph_request_t request = moodgoph_request_new(text, sizeof(text));

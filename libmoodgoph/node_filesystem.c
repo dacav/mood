@@ -18,12 +18,20 @@
 #include <string.h>
 #include <stdlib.h>
 
+#include <stdio.h>
+
 static void serve_cb(moodgoph_node_t, moodgoph_request_t);
 static void delete_cb(moodgoph_node_t);
+static const char* secure_join_path(const char* base_path,
+                                    moodgoph_request_t request,
+                                    char* buffer,
+                                    size_t buffer_size);
+static int bad_path_component(const char*);
 
 struct fs_info
 {
     char* base_dir;
+    size_t base_dir_strlen;
 };
 
 moodgoph_node_t moodgoph_node_filesystem_new(const char* name,
@@ -34,7 +42,8 @@ moodgoph_node_t moodgoph_node_filesystem_new(const char* name,
         return NULL;
     }
 
-    const size_t len = strlen(base_dir) + 1;
+    info->base_dir_strlen = strlen(base_dir);
+    const size_t len = info->base_dir_strlen + 1;
     info->base_dir = malloc(sizeof(char) * len);
     if (!info->base_dir) {
         free(info);
@@ -59,6 +68,27 @@ moodgoph_node_t moodgoph_node_filesystem_new(const char* name,
 
 static void serve_cb(moodgoph_node_t node, moodgoph_request_t request)
 {
+    struct fs_info* info = moodgoph_node_get_context(node);
+    const size_t pathmaxlen = info->base_dir_strlen
+                            + moodgoph_request_get_query_len(request)
+                            + 1;
+    char* buffer = malloc(pathmaxlen);
+    if (!buffer) {
+        /* TODO: send internal error */
+        return;
+    }
+
+    const char* path = secure_join_path(
+        info->base_dir, request, buffer, pathmaxlen
+    );
+    if (path == NULL) {
+        /* TODO: send bad request (security) */
+    }
+    else {
+        /* TODO: send response */
+    }
+
+    free(buffer);
 }
 
 static void delete_cb(moodgoph_node_t node)
@@ -66,4 +96,38 @@ static void delete_cb(moodgoph_node_t node)
     struct fs_info* info = (struct fs_info*) moodgoph_node_get_context(node);
     free(info->base_dir);
     free(info);
+}
+
+static const char* secure_join_path(const char* base_path,
+                                    moodgoph_request_t request,
+                                    char* buffer,
+                                    size_t buffer_size)
+{
+    if (buffer_size < 1) {
+        return NULL;
+    }
+
+    const size_t last = buffer_size - 1;
+    size_t cursor = 0;
+    const char* token;
+    while ((token = moodgoph_request_next_token(request)) != NULL) {
+        if (bad_path_component(token)) return NULL;
+
+        while (cursor < last && *token != '\0') {
+            buffer[cursor++] = *token++;
+        }
+
+        if (cursor == last) return NULL;
+        buffer[cursor++] = '/';
+        if (cursor == last) return NULL;
+    }
+    buffer[--cursor] = '\0';
+
+    return buffer;
+}
+
+static int bad_path_component(const char* name)
+{
+    /* TODO: check bad path and return non-zero upon error */
+    return 0;
 }
